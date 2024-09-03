@@ -62,7 +62,6 @@ func (s *server) GetSahamData(menuRequest *protobuff.MenuRequest, srv protobuff.
 	log.Printf("Received request to get saham data")
 	sahams := []*protobuff.Saham{
 		{
-			Date:   "2024-08-30",
 			Open:   175.25,
 			High:   178.00,
 			Low:    174.10,
@@ -70,7 +69,6 @@ func (s *server) GetSahamData(menuRequest *protobuff.MenuRequest, srv protobuff.
 			Volume: 12345678,
 		},
 		{
-			Date:   "2024-08-31",
 			Open:   10.00,
 			High:   200.00,
 			Low:    12.10,
@@ -90,9 +88,13 @@ func (s *server) GetSahamData(menuRequest *protobuff.MenuRequest, srv protobuff.
 			index := i % len(sahams)
 			i = i + 1
 
-			log.Printf("Sending saham data: %v", sahams[index])
+			sahamData := sahams[index]
 
-			err := srv.Send(sahams[index])
+			sahamData.Date = time.Now().Format("2006-01-02 15:04:05")
+
+			log.Printf("Sending saham data: %v", sahamData)
+
+			err := srv.Send(sahamData)
 			if err != nil {
 				return status.Error(codes.Aborted, "Failed sending message")
 			}
