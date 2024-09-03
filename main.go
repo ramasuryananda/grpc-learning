@@ -17,11 +17,11 @@ type server struct {
 }
 
 func (s *server) GetMenu(menuRequest *protobuff.MenuRequest, srv protobuff.CoffeShop_GetMenuServer) error {
-	log.Printf("received message to get menu")
+	log.Printf("Received request to get menu")
 	items := []*protobuff.Item{
 		{
 			Id:   "1",
-			Name: "Coffe",
+			Name: "Coffee",
 		},
 		{
 			Id:   "2",
@@ -37,14 +37,14 @@ func (s *server) GetMenu(menuRequest *protobuff.MenuRequest, srv protobuff.Coffe
 	for {
 		select {
 		case <-srv.Context().Done():
-			log.Printf("streaming canceled")
+			log.Printf("Streaming canceled")
 			return status.Error(codes.Canceled, "stream ended")
 		default:
 			time.Sleep(2 * time.Second)
 			index := i % 3
 			i = i + 1
 
-			log.Printf("sending message get menu : %v", items[index])
+			log.Printf("Sending menu item: %v", items[index])
 
 			err := srv.Send(&protobuff.Menu{
 				Items: []*protobuff.Item{
@@ -52,21 +52,63 @@ func (s *server) GetMenu(menuRequest *protobuff.MenuRequest, srv protobuff.Coffe
 				},
 			})
 			if err != nil {
-				return status.Error(codes.Aborted, "failed sending message")
+				return status.Error(codes.Aborted, "Failed sending message")
+			}
+		}
+	}
+}
+
+func (s *server) GetSahamData(menuRequest *protobuff.MenuRequest, srv protobuff.CoffeShop_GetSahamDataServer) error {
+	log.Printf("Received request to get saham data")
+	sahams := []*protobuff.Saham{
+		{
+			Date:   "2024-08-30",
+			Open:   175.25,
+			High:   178.00,
+			Low:    174.10,
+			Close:  176.85,
+			Volume: 12345678,
+		},
+		{
+			Date:   "2024-08-31",
+			Open:   10.00,
+			High:   200.00,
+			Low:    12.10,
+			Close:  200.85,
+			Volume: 12345678,
+		},
+	}
+	i := 0
+
+	for {
+		select {
+		case <-srv.Context().Done():
+			log.Printf("Streaming canceled")
+			return status.Error(codes.Canceled, "stream ended")
+		default:
+			time.Sleep(2 * time.Second)
+			index := i % len(sahams)
+			i = i + 1
+
+			log.Printf("Sending saham data: %v", sahams[index])
+
+			err := srv.Send(sahams[index])
+			if err != nil {
+				return status.Error(codes.Aborted, "Failed sending message")
 			}
 		}
 	}
 }
 
 func (s *server) PlaceOrder(ctx context.Context, od *protobuff.Order) (*protobuff.Receipt, error) {
-	log.Printf("received message to place order")
+	log.Printf("Received request to place order")
 	return &protobuff.Receipt{
 		Id: "123",
 	}, nil
 }
 
 func (s *server) GetOrderStatus(ctx context.Context, receipt *protobuff.Receipt) (*protobuff.OrderStatus, error) {
-	log.Printf("received message to get order status")
+	log.Printf("Received request to get order status")
 	return &protobuff.OrderStatus{
 		OrderId: receipt.Id,
 		Status:  "IN PROGRESS",
@@ -76,17 +118,16 @@ func (s *server) GetOrderStatus(ctx context.Context, receipt *protobuff.Receipt)
 func main() {
 	lis, err := net.Listen("tcp", ":9001")
 	if err != nil {
-		log.Fatalf("failed to listen to port : %s", err)
+		log.Fatalf("Failed to listen on port 9001: %v", err)
 	}
 
-	grpceServer := grpc.NewServer()
+	grpcServer := grpc.NewServer()
 	serverService := &server{}
 
-	protobuff.RegisterCoffeShopServer(grpceServer, serverService)
+	protobuff.RegisterCoffeShopServer(grpcServer, serverService)
 
-	log.Printf("GRPC Server started")
-	if err := grpceServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve grpc  : %s", err)
+	log.Printf("gRPC Server started on port 9001")
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve gRPC server: %v", err)
 	}
-
 }

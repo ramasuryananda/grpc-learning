@@ -4,20 +4,21 @@ package coffeshop;
 
 option go_package = "github.com/ramasuryananda/grpc-learning/protobuff";
 
-service CoffeShop{
+service CoffeShop {
     rpc GetMenu (MenuRequest) returns (stream Menu) {}
     rpc PlaceOrder (Order) returns (Receipt) {}
     rpc GetOrderStatus (Receipt) returns (OrderStatus) {}
+    rpc GetSahamData (MenuRequest) returns (stream Saham) {}
 }
 
 message MenuRequest {}
 
 message Order {
-    repeated Item items=1;
+    repeated Item items = 1;
 }
 
 message Receipt {
-    string id =1;
+    string id = 1;
 }
 
 message OrderStatus {
@@ -26,10 +27,20 @@ message OrderStatus {
 }
 
 message Menu {
-    repeated Item items=1;
+    repeated Item items = 1;
 }
 
 message Item {
     string id = 1;
     string name = 2;
+}
+
+// Message representing stock data (Saham)
+message Saham {
+    string date = 1;
+    float open = 2;
+    float high = 3;
+    float low = 4;
+    float close = 5;
+    int32 volume = 6;
 }
