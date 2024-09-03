@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log"
-	"time"
 
 	protobuff "github.com/ramasuryananda/grpc-learning/pb"
 	"google.golang.org/grpc"
@@ -21,8 +20,8 @@ func main() {
 
 	c := protobuff.NewCoffeShopClient(con)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	// defer cancel()
 
 	menuStream, err := c.GetMenu(ctx, &protobuff.MenuRequest{})
 	if err != nil {
@@ -32,6 +31,8 @@ func main() {
 	done := make(chan bool)
 
 	var items []*protobuff.Item
+
+	i := 0
 
 	go func() {
 		for {
@@ -47,18 +48,23 @@ func main() {
 
 			items = resp.Items
 			log.Printf("Resp received : %v", resp.Items)
+			if i > 10 {
+				cancel()
+			}
+
+			i++
 		}
 	}()
 
 	<-done
 
-	receipt, err := c.PlaceOrder(ctx, &protobuff.Order{Items: items})
+	receipt, err := c.PlaceOrder(context.Background(), &protobuff.Order{Items: items})
 	if err != nil {
 		log.Fatalf("failed to get receipt  : %v", err)
 	}
 	log.Printf("%v", receipt)
 
-	status, err := c.GetOrderStatus(ctx, &protobuff.Receipt{
+	status, err := c.GetOrderStatus(context.Background(), &protobuff.Receipt{
 		Id: receipt.Id,
 	})
 	if err != nil {

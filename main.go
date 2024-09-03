@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
+	"time"
 
 	protobuff "github.com/ramasuryananda/grpc-learning/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -29,22 +33,37 @@ func (s *server) GetMenu(menuRequest *protobuff.MenuRequest, srv protobuff.Coffe
 			Name: "Milk Tea",
 		},
 	}
+	i := 0
 
-	for i := 0; i < len(items); i++ {
-		srv.Send(&protobuff.Menu{
-			Items: items[0 : i+1],
-		})
+	for {
+		select {
+		case <-srv.Context().Done():
+			log.Printf("streaming canceled")
+			return status.Error(codes.Canceled, "stream ended")
+		default:
+			time.Sleep(2 * time.Second)
+			i = i + 1
+			index := i % 3
+			fmt.Println("sending message")
+			err := srv.Send(&protobuff.Menu{
+				Items: []*protobuff.Item{
+					items[index],
+				},
+			})
+			if err != nil {
+				return status.Error(codes.Aborted, "failed sending message")
+			}
+		}
 	}
-
-	return nil
-
 }
+
 func (s *server) PlaceOrder(ctx context.Context, od *protobuff.Order) (*protobuff.Receipt, error) {
 	log.Printf("received message to place order")
 	return &protobuff.Receipt{
 		Id: "123",
 	}, nil
 }
+
 func (s *server) GetOrderStatus(ctx context.Context, receipt *protobuff.Receipt) (*protobuff.OrderStatus, error) {
 	log.Printf("received message to get order status")
 	return &protobuff.OrderStatus{
@@ -60,8 +79,9 @@ func main() {
 	}
 
 	grpceServer := grpc.NewServer()
+	serverService := &server{}
 
-	protobuff.RegisterCoffeShopServer(grpceServer, &server{})
+	protobuff.RegisterCoffeShopServer(grpceServer, serverService)
 
 	log.Printf("GRPC Server started")
 	if err := grpceServer.Serve(lis); err != nil {
