@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"time"
@@ -42,9 +41,11 @@ func (s *server) GetMenu(menuRequest *protobuff.MenuRequest, srv protobuff.Coffe
 			return status.Error(codes.Canceled, "stream ended")
 		default:
 			time.Sleep(2 * time.Second)
-			i = i + 1
 			index := i % 3
-			fmt.Println("sending message")
+			i = i + 1
+
+			log.Printf("sending message get menu : %v", items[index])
+
 			err := srv.Send(&protobuff.Menu{
 				Items: []*protobuff.Item{
 					items[index],
