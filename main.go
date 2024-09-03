@@ -83,8 +83,8 @@ func (s *server) GetSahamData(menuRequest *protobuff.MenuRequest, srv protobuff.
 			sahamData := &protobuff.Saham{
 				Date:   time.Now().Format("2006-01-02 15:04:05"),
 				Open:   randomFloat(100, 200),
-				High:   randomFloat(100, 200),
-				Low:    randomFloat(100, 200),
+				High:   randomFloat(150, 200),
+				Low:    randomFloat(100, 149),
 				Close:  randomFloat(100, 200),
 				Volume: 12345678,
 			}
