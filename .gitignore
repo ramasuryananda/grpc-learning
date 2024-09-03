@@ -1,2 +1,3 @@
 # Ignore the grpc-learning binary
 grpc-learning
+*exe
