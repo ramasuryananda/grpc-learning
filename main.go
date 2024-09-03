@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"math/rand"
 	"net"
 	"time"
 
@@ -11,6 +12,16 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// Initialize the random number generator
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+// RandomFloat generates a random float32 between min and max
+func randomFloat(min, max float32) float32 {
+	return min + rand.Float32()*(max-min)
+}
 
 type server struct {
 	protobuff.UnimplementedCoffeShopServer
@@ -38,10 +49,10 @@ func (s *server) GetMenu(menuRequest *protobuff.MenuRequest, srv protobuff.Coffe
 		select {
 		case <-srv.Context().Done():
 			log.Printf("Streaming canceled")
-			return status.Error(codes.Canceled, "stream ended")
+			return status.Error(codes.Canceled, "Stream ended")
 		default:
 			time.Sleep(2 * time.Second)
-			index := i % 3
+			index := i % len(items)
 			i = i + 1
 
 			log.Printf("Sending menu item: %v", items[index])
@@ -60,42 +71,27 @@ func (s *server) GetMenu(menuRequest *protobuff.MenuRequest, srv protobuff.Coffe
 
 func (s *server) GetSahamData(menuRequest *protobuff.MenuRequest, srv protobuff.CoffeShop_GetSahamDataServer) error {
 	log.Printf("Received request to get saham data")
-	sahams := []*protobuff.Saham{
-		{
-			Open:   175.25,
-			High:   178.00,
-			Low:    174.10,
-			Close:  176.85,
-			Volume: 12345678,
-		},
-		{
-			Open:   10.00,
-			High:   200.00,
-			Low:    12.10,
-			Close:  200.85,
-			Volume: 12345678,
-		},
-	}
-	i := 0
 
 	for {
 		select {
 		case <-srv.Context().Done():
 			log.Printf("Streaming canceled")
-			return status.Error(codes.Canceled, "stream ended")
+			return status.Error(codes.Canceled, "Stream ended")
 		default:
 			time.Sleep(2 * time.Second)
-			index := i % len(sahams)
-			i = i + 1
 
-			sahamData := sahams[index]
-
-			sahamData.Date = time.Now().Format("2006-01-02 15:04:05")
+			sahamData := &protobuff.Saham{
+				Date:   time.Now().Format("2006-01-02 15:04:05"),
+				Open:   randomFloat(100, 200),
+				High:   randomFloat(100, 200),
+				Low:    randomFloat(100, 200),
+				Close:  randomFloat(100, 200),
+				Volume: 12345678,
+			}
 
 			log.Printf("Sending saham data: %v", sahamData)
 
-			err := srv.Send(sahamData)
-			if err != nil {
+			if err := srv.Send(sahamData); err != nil {
 				return status.Error(codes.Aborted, "Failed sending message")
 			}
 		}
